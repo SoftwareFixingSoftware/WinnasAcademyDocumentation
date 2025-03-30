@@ -1,0 +1,134 @@
+Table Students {
+  student_id varchar(50) [primary key]
+  national_id varchar(50)
+  full_name varchar(100)
+  email varchar(100) [unique]
+  contact varchar(20) [unique]
+  student_password varchar(200)
+  dob date
+  gender varchar(10) [note: 'Must be Male, Female, or Other']
+  country varchar(100)
+  registration_date datetime [default: `now()`]
+  passport_image blob
+}
+
+Table Sessions {
+  session_id varchar(100) [primary key]
+  student_id varchar(50) [not null]
+  expiration_time datetime [default: `now() + interval '30 minutes'`]
+  last_activity datetime [default: `now()`]
+}
+
+Table Student_Verification {
+  student_id varchar(50) [primary key]
+  email varchar(255) [unique, not null]
+  verification_token varchar(255)
+  token_expiry datetime
+  verified boolean [default: false]
+}
+
+Table Courses {
+  course_code varchar(20) [primary key]
+  course_name varchar(100) [not null]
+  credit_hours integer [not null]
+  course_fee decimal(10,2) [not null, note: 'Must be >= 0']
+  total_learning_time integer [not null, note: 'Must be > 0']
+}
+
+Table Student_Courses {
+  student_id varchar(50) [not null, pk]
+  course_code varchar(20) [not null, pk]
+  enrollment_date datetime [default: `now()`]
+  status varchar(20) [default: 'Inactive', not null]
+}
+
+Table Lecturers {
+  lecturer_id integer [primary key, increment]
+  first_name varchar(50) [not null]
+  last_name varchar(50) [not null]
+  email varchar(100) [unique, not null]
+  phone varchar(20) [unique]
+}
+
+Table Course_Lecturers {
+  course_lecturer_id integer [primary key, increment]
+  course_code varchar(20) [not null]
+  lecturer_id integer [not null]
+}
+
+Table Learning_Resources {
+  resource_id integer [primary key, increment]
+  course_code varchar(20) [not null]
+  resource_title varchar(255) [not null]
+  resource_url varchar(255) [not null]
+  uploaded_at datetime [default: `now()`]
+}
+
+Table Academics {
+  academic_id integer [primary key, increment]
+  student_id varchar(50) [not null]
+  course_code varchar(20) [not null]
+  grade varchar(5)
+  certificate_url varchar(500)
+}
+
+Table Timetable {
+  course_code varchar(20) [not null, pk]
+  lecturer_id integer [not null]
+  class_date date [not null, pk]
+  start_time varchar(20) [not null, pk]
+  end_time varchar(20) [not null]
+  link varchar(650)
+}
+
+Table Library {
+  book_id integer [primary key, increment]
+  title varchar(255) [not null]
+  author varchar(255) [not null]
+  category varchar(100)
+  book_url varchar(500) [unique, not null]
+  uploaded_at datetime [default: `now()`]
+}
+
+Table Announcements {
+  id integer [primary key, increment]
+  source varchar(100) [not null]
+  message text [not null]
+  announcement_date datetime [default: `now()`]
+}
+
+Table Course_Links {
+  id bigint [primary key, increment]
+  course_category varchar(255) [unique, not null]
+  whatsapp_link varchar(500) [not null]
+}
+
+Table Transactions {
+  id integer [primary key, increment]
+  payment_id varchar(255) [unique, not null]
+  payer_id varchar(255) [not null]
+  status varchar(50) [default: 'PENDING', not null]
+  amount decimal(10,2) [not null]
+  currency varchar(10) [not null]
+  student_id varchar(50) [not null]
+  course_code varchar(20) [not null]
+  created_at datetime [default: `now()`]
+}
+
+-- ✅ One-to-One (1:1) relationships
+Ref: Sessions.student_id - Students.student_id [delete: cascade]  -- One session per student
+Ref: Student_Verification.student_id - Students.student_id [delete: cascade]  -- One verification record per student
+Ref: Academics.student_id - Students.student_id [delete: cascade]  -- One academic record per student
+
+-- ✅ One-to-Many (1:M) relationships (must remain as 1:M)
+Ref: Student_Courses.student_id > Students.student_id [delete: cascade]  -- One student can enroll in multiple courses
+Ref: Student_Courses.course_code > Courses.course_code [delete: cascade]  -- One course can have multiple enrollments
+Ref: Course_Lecturers.course_code > Courses.course_code [delete: cascade]  -- One course, multiple lecturers
+Ref: Course_Lecturers.lecturer_id > Lecturers.lecturer_id [delete: cascade]  -- One lecturer can teach multiple courses
+Ref: Learning_Resources.course_code > Courses.course_code [delete: cascade]  -- One course, multiple learning resources
+Ref: Timetable.course_code > Courses.course_code [delete: cascade]  -- One course, multiple timetable entries
+Ref: Timetable.lecturer_id > Lecturers.lecturer_id [delete: cascade]  -- One lecturer, multiple timetable entries
+
+-- ✅ Transactions (can be 1:1 or 1:M, depending on logic)
+Ref: Transactions.student_id > Students.student_id [delete: cascade]  -- One student can have multiple transactions
+Ref: Transactions.course_code > Courses.course_code [delete: cascade]  -- One course can have multiple transactions

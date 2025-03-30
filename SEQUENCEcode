@@ -1,0 +1,80 @@
+##sequenceDiagram in  Mermaid Live Editor
+##login
+sequenceDiagram
+    participant Student
+    participant System
+    participant Login API
+    participant Database
+    participant Sessions Table
+
+    Student->>System: Enter Student ID & Password
+    System-->>Student: Validate input (client-side)
+
+    alt Validation fails
+        System-->>Student: Show "Invalid input" message
+    else Validation passes
+        System->>Login API: POST /api/login (Student ID, Password)
+
+        Login API->>Database: Authenticate user (Check Students table)
+
+        alt Invalid credentials
+            Login API-->>Student: Show error ("Invalid credentials")
+        else Credentials are correct
+            Login API->>Database: Check StudentVerification table (isVerified)
+
+            alt Student is not verified
+                Login API-->>Student: Show error ("Account not verified")
+            else Student is verified
+                Login API->>Sessions Table: Check if active session exists
+
+                alt Active session found
+                    Login API->>Sessions Table: Delete existing session
+                end
+
+                Login API->>Sessions Table: Create new session (generate sessionId, set expirationTime)
+                Login API-->>Student: Login successful, session created
+            end
+        end
+    end
+
+    ##Register students
+    sequenceDiagram
+    participant Student
+    participant System
+    participant Register API
+    participant Database
+    participant Email API
+    participant Admin
+
+    Student->>System: Enter admission details
+    System-->>Student: Validate input (client & server-side)
+    
+    alt Validation fails
+        System-->>Student: Show error message (missing fields)
+    else Validation passes
+        System->>Register API: POST /api/register (student details)
+        Register API->>Database: Check if student exists
+        
+        alt Student already exists (duplicate email or ID)
+            Register API-->>Student: Show error (account already exists)
+        else Student does not exist
+            Register API->>Database: Insert student into Students table
+            Register API->>Database: Generate verification token (store in StudentVerification table)
+            Register API->>Email API: Send verification email with token
+            
+            alt Email fails to send
+                Email API-->>Admin: Alert admin (student remains unverified)
+            else Email sent successfully
+                Email API->>Student: Receive email with verification link
+                
+                alt Student clicks verification link before expiry
+                    Student->>System: Click verification link
+                    System->>Database: Update StudentVerification (isVerified = true)
+                    System-->>Student: Verification complete, login allowed
+                else Token expires before verification
+                    Scheduled API->>Database: Delete unverified records
+                    System-->>Student: Re-register after 30 minutes
+                end
+            end
+        end
+    end
