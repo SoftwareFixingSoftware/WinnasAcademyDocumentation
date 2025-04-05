@@ -33,6 +33,7 @@ Table Courses {
   credit_hours integer [not null]
   course_fee decimal(10,2) [not null, note: 'Must be >= 0']
   total_learning_time integer [not null, note: 'Must be > 0']
+  path varchar(100)
 }
 
 Table Student_Courses {
